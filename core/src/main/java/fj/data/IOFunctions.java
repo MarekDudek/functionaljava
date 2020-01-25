@@ -14,6 +14,8 @@ import fj.data.Iteratee.Input;
 import fj.data.Iteratee.IterV;
 import fj.function.Try0;
 import fj.function.Try1;
+import fj.function.TryEffect0;
+import fj.TryEffect;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -58,6 +60,11 @@ public final class IOFunctions {
 
     public static <A> IO<A> fromTry(Try0<A, ? extends IOException> t) {
         return t::f;
+    }
+
+    public static IO<Unit> fromTryEffect(TryEffect0<? extends IOException> t) {
+        final Validation<? extends IOException, Unit> v = TryEffect.f(t).f();
+        return v.isSuccess() ? ioUnit : () -> { throw v.fail(); };
     }
 
     public static final F<Reader, IO<Unit>> closeReader = IOFunctions::closeReader;

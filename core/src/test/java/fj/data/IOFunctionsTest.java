@@ -1,6 +1,7 @@
 package fj.data;
 
 import fj.*;
+import fj.function.TryEffect0;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static fj.data.IOFunctions.*;
 import static fj.data.Stream.cons;
 import static fj.data.Stream.nil_;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
@@ -112,7 +114,52 @@ public class IOFunctionsTest {
     assertThat(readAndPrintUpperCasedName.run(), is("FOO"));
   }
 
-  private IO<String> println(final String s) {
+    @Test
+    public void testFromTryEffect() throws IOException {
+        final IO<Unit> io = fromTryEffect(new AlwaysSucceed0());
+        assertThat(io.run(), is(Unit.unit()));
+    }
+
+    @Test
+    public void testFromTryEffectFailure() {
+        final IO<Unit> io = fromTryEffect(new AlwaysFail0("failure"));
+        try {
+            io.run();
+            fail("Exception expected");
+        } catch (IOException e) {
+            assertThat(e, instanceOf(TryEffectException.class));
+            assertThat(e.getMessage(), is("failure"));
+        }
+    }
+
+    class AlwaysSucceed0 implements TryEffect0<TryEffectException> {
+        @Override
+        public void f() throws TryEffectException {
+            // SUCCESS
+        }
+    }
+
+    class AlwaysFail0 implements TryEffect0<TryEffectException> {
+
+        private String message;
+
+        public AlwaysFail0(String message) {
+            this.message = message;
+        }
+
+        @Override
+        public void f() throws TryEffectException {
+            throw new TryEffectException(message);
+        }
+    }
+
+    class TryEffectException extends IOException {
+        public TryEffectException(String message) {
+            super(message);
+        }
+    }
+
+    private IO<String> println(final String s) {
     return () -> {
       return s;
     };
